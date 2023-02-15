@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[EventLog](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [TimeStamp] [DATETIME] NULL CONSTRAINT [DF_ErrorLog] DEFAULT (getdate())    , [jsonData] [NVARCHAR](MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL CONSTRAINT [DF__ErrorLog__jsonDa__308E3499] DEFAULT (NULL)    , [Type] [VARCHAR](10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL  
+	    , CONSTRAINT [PK_ErrorLog] PRIMARY KEY CLUSTERED ([ID]));

@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[RepeaterStatuses](      [ID] [TINYINT] NOT NULL IDENTITY(1,1)    , [Status] [VARCHAR](25) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL  
+	    , CONSTRAINT [PK_RepeaterStatuses] PRIMARY KEY CLUSTERED ([ID]));

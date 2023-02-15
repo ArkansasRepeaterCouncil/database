@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[Frequencies](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [Input] [DECIMAL](9,4) NULL    , [Output] [DECIMAL](9,4) NULL    , [Band] [VARCHAR](20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL  
+	    , CONSTRAINT [PK_Frequencies] PRIMARY KEY CLUSTERED ([ID]));

@@ -1,0 +1,1 @@
+CREATE TABLE [dbo].[tempExpiredLicenses](      [value] [NVARCHAR](1000) COLLATE SQL_Latin1_General_CP1_CI_AS NULL    , [UserId] [INT] NULL);

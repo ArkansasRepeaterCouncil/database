@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[States](      [State] [VARCHAR](20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL    , [CoordinatorEmail] [VARCHAR](255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL    , [Borders] [sys].[geography] NULL    , [StateAbbreviation] [VARCHAR](2) COLLATE SQL_Latin1_General_CP1_CI_AS NULL    , [PopulatedInDatabase] [BIT] NULL    , [website] [NVARCHAR](255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL CONSTRAINT [DF__States__website__100C566E] DEFAULT (NULL)  
+	    , CONSTRAINT [PK__States__BA803DACF4C6B60B] PRIMARY KEY CLUSTERED ([State]));

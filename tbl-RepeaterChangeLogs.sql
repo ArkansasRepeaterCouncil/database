@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[RepeaterChangeLogs](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [RepeaterId] [INT] NOT NULL    , [UserId] [INT] NOT NULL    , [ChangeDateTime] [DATETIME] NOT NULL    , [ChangeDescription] [VARCHAR](MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL  
+	    , CONSTRAINT [PK_RepeaterChangeLogs] PRIMARY KEY CLUSTERED ([ID]));

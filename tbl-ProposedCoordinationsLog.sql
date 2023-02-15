@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[ProposedCoordinationsLog](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [RequestedByUserId] [INT] NOT NULL    , [Location] [sys].[geography] NULL    , [TransmitFrequency] [DECIMAL](12,6) NOT NULL    , [ReceiveFrequency] [DECIMAL](12,6) NOT NULL    , [Answer] [INT] NOT NULL    , [Comment] [VARCHAR](255) COLLATE SQL_Latin1_General_CP1_CI_AS NULL    , [DateTime] [DATETIME] NULL CONSTRAINT [DF__ProposedC__DateT__5EDF0F2E] DEFAULT (getdate())  
+	    , CONSTRAINT [PK__Proposed__3214EC27717CDC1F] PRIMARY KEY CLUSTERED ([ID]));

@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[ProposedCoordinationAnswers](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [Description] [VARCHAR](255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL  
+	    , CONSTRAINT [PK__Proposed__3214EC27E392A2E4] PRIMARY KEY CLUSTERED ([ID]));

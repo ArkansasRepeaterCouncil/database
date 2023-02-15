@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[RequestStatuses](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [Description] [VARCHAR](10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL  
+	    , CONSTRAINT [PK_RequestStatuses] PRIMARY KEY CLUSTERED ([ID]));

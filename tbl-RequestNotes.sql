@@ -1,0 +1,2 @@
+CREATE TABLE [dbo].[RequestNotes](      [ID] [INT] NOT NULL IDENTITY(1,1)    , [RequestID] [INT] NOT NULL    , [UserID] [INT] NOT NULL    , [Timestamp] [DATETIME] NOT NULL    , [Note] [VARCHAR](MAX) COLLATE SQL_Latin1_General_CP1_CI_AS NULL  
+	    , CONSTRAINT [PK_RequestNotes] PRIMARY KEY CLUSTERED ([ID]));
