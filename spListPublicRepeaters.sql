@@ -3,7 +3,7 @@ CREATE PROCEDURE [dbo].[spListPublicRepeaters]
 	@search varchar(8000) = '',
 	@latitude varchar(20) = '39.83',
 	@longitude varchar(20) = '-98.583',
-	@miles int = 2680,
+	@miles int = 99999,--2680,
 	@pageSize int = 1000,
 	@pageNumber int = 1,
 	@orderBy varchar(20) = 'OutputFrequency',

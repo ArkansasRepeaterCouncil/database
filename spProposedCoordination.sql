@@ -6,65 +6,41 @@ BEGIN
 
 	If @userId is not null
 	BEGIN
-
-		-- Create a table in memory with the states that will need to be included
-		Declare @tblInterferingRepeaters table (Miles int, OutputFrequency decimal(12,6), City varchar(24), Callsign varchar(6));
-		Declare @countInterferingRepeaters int, @answer int = 2, @comment varchar(255);
+	
 		Declare @point geography = geography::Point(@latitude, @longitude, 4326);
-	
-		IF @TransmitFrequency between 144.0 and 148.0
-		BEGIN
-			Insert into @tblInterferingRepeaters SELECT Round(Location.STDistance(@point) / 1609.34,1) as Miles, OutputFrequency, City, Callsign FROM Repeaters
-			WHERE (OutputFrequency = @TransmitFrequency AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .015 AND Location.STDistance(@point) < 64374) --  meters ~= 40 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .020 AND Location.STDistance(@point) < 40234) --  meters ~= 25 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .030 AND Location.STDistance(@point) < 32187) --  meters ~= 20 miles
-			ORDER BY Location.STDistance(@point);
-		END;
 		
-		IF @TransmitFrequency between 222.0 and 225.0
-		BEGIN
-			Insert into @tblInterferingRepeaters SELECT Round(Location.STDistance(@point) / 1609.34,1) as Miles, OutputFrequency, City, Callsign FROM Repeaters
-			WHERE (OutputFrequency = @TransmitFrequency AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .025 AND Location.STDistance(@point) < 64374) --  meters ~= 40 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .040 AND Location.STDistance(@point) < 8047) --  meters ~= 5 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .050 AND Location.STDistance(@point) < 1) --  meters ~= 1 meter (no minimum)
-			ORDER BY Location.STDistance(@point);
-		END;
+		-- Get the list of states affected
+		Declare @conflicts table (RepeaterID int, Miles decimal(20,2), OutputFrequency decimal(12,6), City nvarchar(24), Callsign varchar(6));
+		Declare @statesToCheck table(stateabbr varchar(2)); Declare @miles decimal(20,2);
+		Select @miles = Max(SeparationMiles) from BusinessRulesFrequencies;
+		Insert into @statesToCheck Select StateAbbreviation from States where @point.STBuffer(dbo.MilesToMeters(@miles)).STIntersects(Borders) = 1;
 		
-		IF @TransmitFrequency between 420.0 and 450.0
-		BEGIN
-			Insert into @tblInterferingRepeaters SELECT Round(Location.STDistance(@point) / 1609.34,1) as Miles, OutputFrequency, City, Callsign FROM Repeaters
-			WHERE (OutputFrequency = @TransmitFrequency AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .025 AND Location.STDistance(@point) < 8047) --  meters ~= 5 miles
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .040 AND Location.STDistance(@point) < 1610) --  meters ~= 1 mile
-			 OR (ABS(OutputFrequency - @TransmitFrequency) <= .050 AND Location.STDistance(@point) < 1) --  meters ~= 1 meter (no minimum)
-			ORDER BY Location.STDistance(@point);
-		END;
-	
-		select @countInterferingRepeaters=count(Miles) from @tblInterferingRepeaters;
-		IF @countInterferingRepeaters = 0 
-		BEGIN
-			Set @answer = 1;
-			Set @comment = 'According to our records, a repeater at this location on this frequency will not interfer with any coordinated repeater.';
-		END;
-	
-		IF @countInterferingRepeaters > 0
-		BEGIN
-			Declare @closestMiles int;
-			Select top 1 @closestMiles=Miles from @tblInterferingRepeaters order by Miles asc;
-			Set @comment=concat('This would potentially interfer with ', @countInterferingRepeaters, ' repeater(s), the closest of which is ', @closestMiles, ' miles away.');
-		END;
-	
-		Insert into EventLog (jsonData, Type) values ('{ "callsign":"' + @callsign + '", "event":"NOPC", "message":"Proposed coordination filed by ' + @callsign + '" }', 'NOPC');
-		Insert into ProposedCoordinationsLog Select @userId, @point, @TransmitFrequency, @receiveFreq, @answer, @comment, GetDate();
-	
-		Declare @RequestID int;
-		Select @RequestID=SCOPE_IDENTITY();
-	
-		Select TransmitFrequency, ReceiveFrequency, ProposedCoordinationAnswers.Description as Answer, Comment from ProposedCoordinationsLog 
-		Inner join ProposedCoordinationAnswers on ProposedCoordinationsLog.Answer = ProposedCoordinationAnswers.ID
-		where ProposedCoordinationsLog.ID = @RequestID;
+		-- Loop through each affected state to apply their rules
+		While exists (Select 1 from @statesToCheck)
+		Begin
+			Declare @currentState varchar(2);
+			Select top 1 @currentState = stateabbr from @statesToCheck;
+			
+			Declare @rules table(id int, spacing decimal(5,3), separation int);
+			Insert into @rules Select ID, SpacingMhz, SeparationMiles from BusinessRulesFrequencies where StateAbbreviation = @currentState and FrequencyStart <= @TransmitFrequency and @TransmitFrequency <= FrequencyEnd;
+			
+			-- Loop through each of this state's rules and apply them.
+			While exists (Select 1 from @rules)
+			Begin
+				Declare @currentRuleID int, @currentSpacing decimal(5,3), @currentSeparation int;
+				Select top 1 @currentRuleID = ID, @currentSpacing = spacing, @currentSeparation = separation from @rules;
+				
+				Insert into @conflicts SELECT ID, Round(dbo.MetersToMiles(Location.STDistance(@point)),0) as Miles, OutputFrequency, City, Callsign FROM Repeaters
+		WHERE ABS(OutputFrequency - @TransmitFrequency) <= @currentSpacing AND Location.STDistance(@point) < dbo.MilesToMeters(@currentSeparation);
+				
+				Delete from @rules where ID = @currentRuleID;
+			End
+			
+			Delete from @statesToCheck where stateabbr = @currentState;
+		End
+		
+		Select Distinct RepeaterID, Miles, OutputFrequency, City, Callsign from @conflicts;
+		
 	END
 	ELSE
 	BEGIN

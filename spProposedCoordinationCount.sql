@@ -3,64 +3,37 @@ AS
 BEGIN
 	DECLARE @point geography = geography::Point(@latitude, @longitude, 4326);
 	Set @count = 0;
-
-	IF @freq between 144.0 and 148.0
-	BEGIN
-		SELECT @count=Count(ID) FROM Repeaters
-		WHERE Status <> 6 AND (
-		 (OutputFrequency = @freq AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-		 OR (ABS(OutputFrequency - @freq) <= .015 AND Location.STDistance(@point) < 64374) --  meters ~= 40 miles
-		 OR (ABS(OutputFrequency - @freq) <= .020 AND Location.STDistance(@point) < 40234) --  meters ~= 25 miles
-		 OR (ABS(OutputFrequency - @freq) <= .030 AND Location.STDistance(@point) < 32187) --  meters ~= 20 miles
-		)
-
-		SELECT @count=@count+Count(ID) FROM Requests
-		WHERE StatusID = 1 AND (
-		(OutputFrequency = @freq AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-		OR (ABS(OutputFrequency - @freq) <= .015 AND Location.STDistance(@point) < 64374) --  meters ~= 40 miles
-		OR (ABS(OutputFrequency - @freq) <= .020 AND Location.STDistance(@point) < 40234) --  meters ~= 25 miles
-		OR (ABS(OutputFrequency - @freq) <= .030 AND Location.STDistance(@point) < 32187) --  meters ~= 20 miles
-		)
-	END;
 	
+	-- Get the list of states affected
+	Declare @conflicts table (RepeaterID int, Miles decimal(20,2), OutputFrequency decimal(12,6), City nvarchar(24), Callsign varchar(6));
+	Declare @statesToCheck table(stateabbr varchar(2)); Declare @miles decimal(20,2);
+	Select @miles = Max(SeparationMiles) from BusinessRulesFrequencies;
+	Insert into @statesToCheck Select StateAbbreviation from States where @point.STBuffer(dbo.MilesToMeters(@miles)).STIntersects(Borders) = 1;
 	
-	IF @freq between 222.0 and 225.0
-	BEGIN
-		SELECT @count=Count(ID) FROM Repeaters
-		WHERE Status <> 6 AND (
-		 (OutputFrequency = @freq AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-		 OR (ABS(OutputFrequency - @freq) <= .025 AND Location.STDistance(@point) < 64374) --  meters ~= 40 miles
-		 OR (ABS(OutputFrequency - @freq) <= .040 AND Location.STDistance(@point) < 8047) --  meters ~= 5 miles
-		 OR (ABS(OutputFrequency - @freq) <= .050 AND Location.STDistance(@point) < 1) --  meters ~= 1 meter (no minimum)
-		)
-
-		SELECT @count=@count+Count(ID) FROM Requests
-		WHERE StatusID = 1 AND ( 
-		(OutputFrequency = @freq AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-		 OR (ABS(OutputFrequency - @freq) <= .025 AND Location.STDistance(@point) < 64374) --  meters ~= 40 miles
-		 OR (ABS(OutputFrequency - @freq) <= .040 AND Location.STDistance(@point) < 8047) --  meters ~= 5 miles
-		 OR (ABS(OutputFrequency - @freq) <= .050 AND Location.STDistance(@point) < 1) --  meters ~= 1 meter (no minimum)
-		)
-	END;
+	-- Loop through each affected state to apply their rules
+	While exists (Select 1 from @statesToCheck)
+	Begin
+		Declare @currentState varchar(2);
+		Select top 1 @currentState = stateabbr from @statesToCheck;
+		
+		Declare @rules table(id int, spacing decimal(5,3), separation int);
+		Insert into @rules Select ID, SpacingMhz, SeparationMiles from BusinessRulesFrequencies where StateAbbreviation = @currentState and FrequencyStart <= @freq and @freq <= FrequencyEnd;
+		
+		-- Loop through each of this state's rules and apply them.
+		While exists (Select 1 from @rules)
+		Begin
+			Declare @currentRuleID int, @currentSpacing decimal(5,3), @currentSeparation int;
+			Select top 1 @currentRuleID = ID, @currentSpacing = spacing, @currentSeparation = separation from @rules;
+			
+			Insert into @conflicts SELECT ID, Round(dbo.MetersToMiles(Location.STDistance(@point)),0) as Miles, OutputFrequency, City, Callsign FROM Repeaters
+				WHERE ABS(OutputFrequency - @freq) <= @currentSpacing AND Location.STDistance(@point) < dbo.MilesToMeters(@currentSeparation);
+			
+			Delete from @rules where ID = @currentRuleID;
+		End
+		
+		Delete from @statesToCheck where stateabbr = @currentState;
+	End
 	
-	
-	IF @freq between 420.0 and 450.0
-	BEGIN
-		SELECT @count=Count(ID) FROM Repeaters
-		WHERE Status <> 6 AND ( 
-		(OutputFrequency = @freq AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-		 OR (ABS(OutputFrequency - @freq) <= .025 AND Location.STDistance(@point) < 8047) --  meters ~= 5 miles
-		 OR (ABS(OutputFrequency - @freq) <= .040 AND Location.STDistance(@point) < 1610) --  meters ~= 1 mile
-		 OR (ABS(OutputFrequency - @freq) <= .050 AND Location.STDistance(@point) < 1) --  meters ~= 1 meter (no minimum)
-		)
-
-		SELECT @count=@count+Count(ID) FROM Requests
-		WHERE StatusID = 1 AND ( 
-		(OutputFrequency = @freq AND Location.STDistance(@point) < 144841) -- 144841 meters ~= 90 miles
-		 OR (ABS(OutputFrequency - @freq) <= .025 AND Location.STDistance(@point) < 8047) --  meters ~= 5 miles
-		 OR (ABS(OutputFrequency - @freq) <= .040 AND Location.STDistance(@point) < 1610) --  meters ~= 1 mile
-		 OR (ABS(OutputFrequency - @freq) <= .050 AND Location.STDistance(@point) < 1) --  meters ~= 1 meter (no minimum)
-		)
-	END;
+	Select count(Distinct RepeaterID) from @conflicts;
 
 END
