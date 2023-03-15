@@ -25,7 +25,7 @@ BEGIN
 			Declare @currentRuleID int, @currentSpacing decimal(5,3), @currentSeparation int;
 			Select top 1 @currentRuleID = ID, @currentSpacing = spacing, @currentSeparation = separation from @rules;
 			
-			Insert into @conflicts SELECT ID, Round(dbo.MetersToMiles(Location.STDistance(@point)),0) as Miles, OutputFrequency, City, Callsign FROM Repeaters
+			Insert into @conflicts SELECT ID, Round(dbo.MetersToMiles(Round(Location.STDistance(@point), 8),0) as Miles, OutputFrequency, City, Callsign FROM Repeaters
 				WHERE ABS(OutputFrequency - @freq) <= @currentSpacing AND Location.STDistance(@point) < dbo.MilesToMeters(@currentSeparation);
 			
 			Delete from @rules where ID = @currentRuleID;
