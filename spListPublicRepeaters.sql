@@ -19,7 +19,7 @@ BEGIN
 		Repeaters.Location.STDistance(@point)/1609.34 as MilesAway
 	
 	from repeaters 
-		join Users on TrusteeID = Users.ID
+		left join Users on TrusteeID = Users.ID
 		join RepeaterStatuses on RepeaterStatuses.ID = Repeaters.Status
 		join RepeaterTypes on RepeaterTypes.ID = Repeaters.Type
 	
@@ -30,7 +30,7 @@ BEGIN
 	and (Repeaters.OutputFrequency like @search + '%'
 	or Repeaters.Callsign like '%' + @search + '%' 
 	or Repeaters.City like '%' + @search + '%'
-	or Users.Callsign like '%' + @search + '%' )
+	or Users.Callsign like '%' + @search + '%')
 	and @point.STBuffer(@meters).STIntersects(Repeaters.Location) = 1
 
 	Order by

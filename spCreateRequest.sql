@@ -18,7 +18,7 @@ BEGIN
 		Declare @decFrequency Decimal(9,6) = CAST(@OutputFrequency AS Decimal(9,6));
 
 		DECLARE @location geography = geography::Point(@latitude,@longitude, 4326);
-		DECLARE @state varchar(2) ;
+		DECLARE @state varchar(2);
 		Select @state=StateAbbreviation from States where Borders.STContains(@location) = 1
 
 		-- Make sure we can offer this frequency in the state
@@ -75,15 +75,15 @@ BEGIN
 					-- Create table in memory for request info
 					Declare @templateDataTable table (latitude varchar(20), longitude varchar(20), outputPower int, amsl int, 
 					antennaHeight int, outputFrequency varchar(12), inputFrequency varchar(12), urlKey char(128), requestId int,
-					state varchar(50), website nvarchar(255));
+					state varchar(50), website nvarchar(255), stateAbbreviation nvarchar(255));
 	
 					Delete from @templateDataTable;
 					
 					Declare @website nvarchar(255), @stateName nvarchar(50);
-					Select @website = website, @stateName = state from States where State = @state;
+					Select @website = website, @stateName = state from States where StateAbbreviation = @state;
 	
 					Insert into @templateDataTable values (@Latitude, @Longitude, @OutputPower, @Altitude, @AntennaHeight, 
-					@OutputFrequency, @inputFrequency, @urlKey, @RequestID, @stateName, @website);
+					@OutputFrequency, @inputFrequency, @urlKey, @RequestID, @stateName, @website, @state);
 	
 					Declare @templateData varchar(max) = (Select * from @templateDataTable for json auto, WITHOUT_ARRAY_WRAPPER);
 	

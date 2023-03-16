@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[spReportNonstandardRepeaters] @callsign varchar(10), @password varchar(255)
+CREATE PROCEDURE [dbo].[spReportNonstandardRepeaters] @callsign varchar(10), @password varchar(255), @state varchar(2)
 AS   
 BEGIN
 	Declare @allowed bit = 0;

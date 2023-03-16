@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[spReportInoperationalRepeaters] @callsign varchar(10), @password varchar(255)
+CREATE PROCEDURE [dbo].[spReportInoperationalRepeaters] @callsign varchar(10), @password varchar(255), @state varchar(2)
 AS   
 BEGIN
 	Declare @allowed bit = 0;
@@ -38,7 +38,7 @@ BEGIN
 				From Repeaters 
 				Join Users on Users.ID = Repeaters.TrusteeID
 				Join RepeaterStatuses on RepeaterStatuses.ID = Repeaters.Status
-				Where repeaters.status not in (3,6) 
+				Where repeaters.status not in (3,6) and Repeaters.State = @state
 				Order by DateUpdated Asc
 				FOR JSON PATH
 				) 'Report.Data' FOR JSON PATH, WITHOUT_ARRAY_WRAPPER

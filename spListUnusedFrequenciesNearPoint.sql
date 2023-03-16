@@ -15,6 +15,7 @@ BEGIN
 	Begin
 		Declare @count int = 0, @outputFreq decimal(9,4), @inputFreq decimal(9,4);
 		Select top 1 @outputFreq = outputFreq, @inputFreq = inputFreq from @AllFrequencies where Reviewed is null;
+		print(concat('spProposedCoordinationCount ', @lat, ', ', @lon,', ', @outputFreq));
 		exec spProposedCoordinationCount @lat, @lon, @outputFreq, @count output;
 		--Select @count;
 		Update @AllFrequencies set NearbyRepeaters = @count, Reviewed = '1' where outputFreq = @outputFreq;

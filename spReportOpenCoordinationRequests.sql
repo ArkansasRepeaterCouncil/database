@@ -1,4 +1,4 @@
-CREATE PROCEDURE [dbo].[spReportOpenCoordinationRequests] @callsign varchar(10), @password varchar(255)
+CREATE PROCEDURE [dbo].[spReportOpenCoordinationRequests] @callsign varchar(10), @password varchar(255), @state varchar(2)
 AS   
 BEGIN
 	Declare @allowed bit = 0;
@@ -27,7 +27,7 @@ BEGIN
 			) 'Request.Workflows'
 			FROM Requests 
 			Inner join Users on Requests.UserID = Users.ID
-			where statusID = 1
+			where statusID = 1 and Requests.State = @state
 			ORDER BY Requests.ID ASC
 			For JSON path, INCLUDE_NULL_VALUES) 'Report.Data' FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)
 	END

@@ -25,8 +25,12 @@ BEGIN
 			Declare @currentRuleID int, @currentSpacing decimal(5,3), @currentSeparation int;
 			Select top 1 @currentRuleID = ID, @currentSpacing = spacing, @currentSeparation = separation from @rules;
 			
-			Insert into @conflicts SELECT ID, Round(dbo.MetersToMiles(Round(Location.STDistance(@point), 8),0) as Miles, OutputFrequency, City, Callsign FROM Repeaters
-				WHERE ABS(OutputFrequency - @freq) <= @currentSpacing AND Location.STDistance(@point) < dbo.MilesToMeters(@currentSeparation);
+			Insert into @conflicts SELECT ID, dbo.MetersToMiles(Location.STDistance(@point)) as Miles, 
+			OutputFrequency, City, Callsign FROM Repeaters
+			WHERE 
+				ABS(OutputFrequency - @freq) <= @currentSpacing AND 
+				Location.STDistance(@point) < dbo.MilesToMeters(@currentSeparation) AND
+				Status <> 6;
 			
 			Delete from @rules where ID = @currentRuleID;
 		End
@@ -34,6 +38,6 @@ BEGIN
 		Delete from @statesToCheck where stateabbr = @currentState;
 	End
 	
-	Select count(Distinct RepeaterID) from @conflicts;
+	Select @count = count(Distinct RepeaterID) from @conflicts;
 
 END
