@@ -39,7 +39,33 @@ BEGIN
 			Delete from @statesToCheck where stateabbr = @currentState;
 		End
 		
-		Select Distinct RepeaterID, Miles, OutputFrequency, City, Callsign from @conflicts;
+--Select Distinct RepeaterID, Miles, OutputFrequency, City, Callsign from @conflicts;
+		Declare @countInterferingRepeaters int, @answer int = 2, @comment varchar(255);
+		
+		Select @countInterferingRepeaters=count(RepeaterID) from @conflicts;
+	
+		IF @countInterferingRepeaters > 0
+		BEGIN
+			Declare @closestMiles int;
+			Select top 1 @closestMiles=Miles from @conflicts order by Miles asc;
+			Set @comment=concat('This would potentially interfer with ', @countInterferingRepeaters, ' repeater(s), the closest of which is ', @closestMiles, ' miles away.');
+		END;
+		ELSE
+		BEGIN
+			Set @answer = 1;
+			Set @comment = 'According to our records, a repeater at this location on this frequency will not interfer with any coordinated repeater.';
+		END;
+
+		Insert into EventLog (jsonData, Type) values ('{ "callsign":"' + @callsign + '", "event":"NOPC", "message":"Proposed coordination filed by ' + @callsign + '" }', 'NOPC');
+		Insert into ProposedCoordinationsLog Select @userId, @point, @TransmitFrequency, @receiveFreq, @answer, @comment, GetDate();
+	
+		Declare @RequestID int;
+		Select @RequestID=SCOPE_IDENTITY();
+	
+		-- Send the response to the client
+		Select TransmitFrequency, ReceiveFrequency, ProposedCoordinationAnswers.Description as Answer, Comment from ProposedCoordinationsLog
+		Inner join ProposedCoordinationAnswers on ProposedCoordinationsLog.Answer = ProposedCoordinationAnswers.ID
+		where ProposedCoordinationsLog.ID = @RequestID;
 		
 	END
 	ELSE
